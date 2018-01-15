@@ -6,18 +6,106 @@
 
 ## List below here, in a comment/comments, the people you worked with on this assignment AND any resources you used to find code (50 point deduction for not doing so). If none, write "None".
 
+##[Problem 1 resources] - none
+##[Problem 2 resources] - https://www.programsinformationpeople.org/runestone/static/publicpy3/ REST APIs section, Discussion 1, https://docs.python.org/3/library/json.html
+##[Problem 3 resources] - lecture 1, example 1
+##[Problem 4 resources] - those above and first_flas_app_solution.py
 
 
 ## [PROBLEM 1] - 150 points
 ## Below is code for one of the simplest possible Flask applications. Edit the code so that once you run this application locally and go to the URL 'http://localhost:5000/class', you see a page that says "Welcome to SI 364!"
 
-from flask import Flask
+from flask import Flask, request
+import requests
+import json
+
 app = Flask(__name__)
 app.debug = True
+
 
 @app.route('/')
 def hello_to_you():
     return 'Hello!'
+
+
+@app.route('/class')
+def welcome_to_class():
+    return 'Welcome to SI 364!'
+
+
+#gets title mtitle and adds it to the base url
+@app.route('/movie/<mtitle>')
+def movie(mtitle):
+    baseurl = "https://itunes.apple.com/search"
+    params = {}
+    params["term"] = mtitle
+    params["media"] = "movie"
+
+    response_obj = requests.get(baseurl, params = params)
+    response_dict = json.loads(response_obj.text)
+
+    return json.dumps(response_dict)
+
+
+@app.route('/question',methods=["GET", "POST"])
+def fave_number():
+    return """<!DOCTYPE html>
+<html>
+<body>
+<form action="http://localhost:5000/result" method='GET'>
+What's your favorite number?<br>
+<input type="integer" name="favorite number" value="">
+<br>
+<input type="submit" value="Submit">
+</form>
+</body>
+</html>"""
+
+
+@app.route('/result', methods=["GET"])
+def form_results():
+    if request.method == "GET":
+        result_str = ""
+        for k in request.args:
+            num = "{}".format(request.args.get(k,""))
+            doubleInt = int(num)
+            doubleInt = 2*doubleInt
+            result_str += "Double your favorite number is "
+            result_str += str(doubleInt)
+    return result_str
+
+##This is my problem 4 answer, it takes in the title of a song or movie, looks it up in the Itunes API, and returns their total length in minutes
+@app.route('/problem4form', methods=["GET","POST"])
+def form_start():
+    if request.method == "POST":
+        baseurl = "https://itunes.apple.com/search"
+        params = {}
+        params["term"] = "{}".format(request.args.get(1,""))
+        params["media"] = "music"
+
+        response_obj = requests.get(baseurl, params = params)
+        response_dict = json.loads(response_obj.text)
+        totalsec = 0
+        for item in response_dict["results"]:
+            totalsec.append(item["trackTimeMillis"])
+        totalsec = int(totalsec)
+        totalmin = totalsec / 60
+        totalmin = str(totalmin)
+        return totalmin+"minutes long!"
+    return """<!DOCTYPE html>
+    <html>
+    <body>
+    <form action="http://localhost:5000/problem4form" method='POST'>
+    <h1>How long are your favorite things?</h1>
+    What is it?<br>
+    <input type="text" name="title" value=""><br>
+    <input type="Checkbox" name="type"> check here if it's a movie<br>
+    <input type="Checkbox" name="type"> check here if it's a song<br>
+    <br>
+    <input type="submit" value="Submit">
+    </form>
+    </body>
+    </html>"""
 
 
 if __name__ == '__main__':
